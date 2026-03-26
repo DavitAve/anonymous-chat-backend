@@ -15,5 +15,5 @@ RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
 # Если у вас есть статические файлы или другие папки, скопируйте и их
 
-EXPOSE 8000
+EXPOSE 3000
 CMD ["node", "dist/index.js"]
