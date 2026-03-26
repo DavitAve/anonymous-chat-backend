@@ -3,6 +3,8 @@ import http from "http";
 import cors from "cors";
 import { initSocket } from "./socket";
 
+const PORT = process.env.PORT || 3000;
+
 const app = express();
 app.use(cors());
 
@@ -14,6 +16,6 @@ app.get("/", (_, res) => {
   res.send("Server is running!");
 });
 
-server.listen(3000, "0.0.0.0", () => {
-  console.log("Server running on 3000");
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on ${PORT}`);
 });
