@@ -1,7 +1,10 @@
 import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL =
+  process.env.NODE_ENV === "development"
+    ? process.env.FRONTEND_URL_DEV
+    : process.env.FRONTEND_URL;
 
 export const initSocket = (server: HttpServer) => {
   const io = new Server(server, {
