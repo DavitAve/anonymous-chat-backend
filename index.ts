@@ -1,32 +1,22 @@
-import { Server } from "socket.io";
-import { Server as HttpServer } from "http";
+import express from "express";
+import http from "http";
+import cors from "cors";
+import "dotenv/config";
+import { initSocket } from "./socket";
 
-const FRONTEND_URL =
-  process.env.NODE_ENV === "development"
-    ? process.env.FRONTEND_URL_DEV
-    : process.env.FRONTEND_URL;
+const app = express();
+const PORT = Number(process.env.PORT) || 3000;
 
-export const initSocket = (server: HttpServer) => {
-  const io = new Server(server, {
-    cors: {
-      origin: FRONTEND_URL,
-      methods: ["GET", "POST"],
-      credentials: true,
-    },
-    transports: ["websocket", "polling"],
-    allowEIO3: true,
-  });
+app.use(cors());
 
-  io.on("connection", (socket) => {
-    console.log(`User connected to socket: ${socket.id}`);
+app.get("/", (_, res) => {
+  res.send("Server is running");
+});
 
-    socket.on("message", (data) => {
-      console.log("New message:", data);
-      socket.broadcast.emit("message", data);
-    });
+const server = http.createServer(app);
 
-    socket.on("disconnect", () => {
-      console.log(`User ${socket.id} disconnected`);
-    });
-  });
-};
+initSocket(server);
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is listening on port ${PORT}`);
+});
