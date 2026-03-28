@@ -132,6 +132,28 @@ export function registerHandlers(io: Server, socket: Socket) {
     disconnectTimers.set(userId, timer);
   });
 
+  // TYPING
+  socket.on("typing", () => {
+    const chatData = activeChats.get(userId);
+    if (!chatData) return;
+
+    const partnerSocket = users.get(chatData.partnerId);
+    if (partnerSocket) {
+      io.to(partnerSocket).emit("typing");
+    }
+  });
+
+  // STOP TYPING
+  socket.on("stop_typing", () => {
+    const chatData = activeChats.get(userId);
+    if (!chatData) return;
+
+    const partnerSocket = users.get(chatData.partnerId);
+    if (partnerSocket) {
+      io.to(partnerSocket).emit("stop_typing");
+    }
+  });
+
   socket.on("request_online_count", () => {
     socket.emit("online_count", users.size);
   });
