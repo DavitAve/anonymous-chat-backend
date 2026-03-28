@@ -114,6 +114,9 @@ export function registerHandlers(io: Server, socket: Socket) {
 
   // DISCONNECT
   socket.on("disconnect", () => {
+    // 1. СРАЗУ удаляем из очереди поиска, если он там был
+    removeFromQueue(userId);
+
     const timer = setTimeout(() => {
       users.delete(userId);
       io.emit("online_count", users.size);
@@ -171,5 +174,10 @@ export function registerHandlers(io: Server, socket: Socket) {
 
   socket.on("request_online_count", () => {
     socket.emit("online_count", users.size);
+  });
+
+  // CANCEL SEARCH
+  socket.on("cancel_search", () => {
+    removeFromQueue(userId);
   });
 }
