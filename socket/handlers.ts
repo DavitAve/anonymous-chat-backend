@@ -131,4 +131,8 @@ export function registerHandlers(io: Server, socket: Socket) {
 
     disconnectTimers.set(userId, timer);
   });
+
+  socket.on("request_online_count", () => {
+    socket.emit("online_count", users.size);
+  });
 }
