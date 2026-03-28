@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { registerHandlers } from "./handlers";
 
 export function initSocket(server: any) {
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const frontendUrl = process.env.NODE_ENV === 'development' ? process.env.FRONTEND_URL_DEV  : process.env.FRONTEND_URL;
 
   const io = new Server(server, {
     cors: {
