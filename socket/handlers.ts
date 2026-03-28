@@ -34,9 +34,15 @@ export function registerHandlers(io: Server, socket: Socket) {
   }
 
   // MESSAGE
-  socket.on("send_message", ({ text }) => {
+  socket.on("send_message", ({ text }, callback) => {
     const chatData = activeChats.get(userId);
-    if (!chatData) return;
+
+    // Если чата уже нет (собеседник вышел)
+    if (!chatData) {
+      if (typeof callback === "function") callback({ status: "error" });
+      socket.emit("partner_left"); // Форсируем выход
+      return;
+    }
 
     addMessage(chatData.chatId, { text, senderId: userId });
 
@@ -47,6 +53,9 @@ export function registerHandlers(io: Server, socket: Socket) {
         senderId: userId,
       });
     }
+
+    // Подтверждаем отправителю, что всё ок
+    if (typeof callback === "function") callback({ status: "ok" });
   });
 
   // SEARCH
@@ -151,6 +160,13 @@ export function registerHandlers(io: Server, socket: Socket) {
     const partnerSocket = users.get(chatData.partnerId);
     if (partnerSocket) {
       io.to(partnerSocket).emit("stop_typing");
+    }
+  });
+
+  socket.on("check_active_chat", () => {
+    const chatData = activeChats.get(userId);
+    if (!chatData) {
+      socket.emit("no_active_chat");
     }
   });
 
