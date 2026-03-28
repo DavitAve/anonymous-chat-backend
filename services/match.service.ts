@@ -2,14 +2,19 @@ import { queue } from "../store";
 import { User } from "../types";
 
 export function isMatch(a: User, b: User) {
+  // Не матчим юзера с самим собой
   if (a.userId === b.userId) return false;
 
-  return (
-    a.partnerAges.includes(b.age) &&
-    a.partnerGender === b.gender &&
-    b.partnerAges.includes(a.age) &&
-    b.partnerGender === a.gender
-  );
+  // 1. Проверяем возраст (обоюдно)
+  const ageMatch =
+    a.partnerAges.includes(b.age) && b.partnerAges.includes(a.age);
+
+  // 2. Проверяем пол (обоюдно, с учетом "any")
+  const genderMatch =
+    (a.partnerGender === "any" || a.partnerGender === b.gender) &&
+    (b.partnerGender === "any" || b.partnerGender === a.gender);
+
+  return ageMatch && genderMatch;
 }
 
 export function removeFromQueue(userId: string) {
