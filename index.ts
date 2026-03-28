@@ -9,8 +9,9 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
 
-app.get("/", (_, res) => {
-  res.send("Server is running");
+app.get("/", (req, res) => {
+  res.setHeader("Content-Type", "text/plain");
+  res.status(200).send("OK");
 });
 
 const server = http.createServer(app);
