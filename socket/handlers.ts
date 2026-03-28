@@ -26,13 +26,6 @@ export function registerHandlers(io: Server, socket: Socket) {
     disconnectTimers.delete(userId);
   }
 
-  // RECONNECT
-  const chatData = activeChats.get(userId);
-  if (chatData) {
-    const history = getHistory(chatData.chatId);
-    socket.emit("chat_history", history);
-  }
-
   // MESSAGE
   socket.on("send_message", ({ text }, callback) => {
     const chatData = activeChats.get(userId);
@@ -165,8 +158,14 @@ export function registerHandlers(io: Server, socket: Socket) {
 
   socket.on("check_active_chat", () => {
     const chatData = activeChats.get(userId);
+
     if (!chatData) {
+      // Чата нет, выкидываем на главную
       socket.emit("no_active_chat");
+    } else {
+      // Чат есть, ФРОНТЕНД ГОТОВ её принять отправляем
+      const history = getHistory(chatData.chatId);
+      socket.emit("chat_history", history);
     }
   });
 
