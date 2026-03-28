@@ -30,25 +30,27 @@ export function registerHandlers(io: Server, socket: Socket) {
   socket.on("send_message", ({ text }, callback) => {
     const chatData = activeChats.get(userId);
 
-    // Если чата уже нет (собеседник вышел)
     if (!chatData) {
       if (typeof callback === "function") callback({ status: "error" });
-      socket.emit("partner_left"); // Форсируем выход
+      socket.emit("partner_left");
       return;
     }
 
-    addMessage(chatData.chatId, { text, senderId: userId });
+    // Генерируем время
+    const timestamp = Date.now();
+    const messageData = { text, senderId: userId, timestamp };
+
+    // Сохраняем в историю объект со временем
+    addMessage(chatData.chatId, messageData);
 
     const partnerSocket = users.get(chatData.partnerId);
     if (partnerSocket) {
-      io.to(partnerSocket).emit("receive_message", {
-        text,
-        senderId: userId,
-      });
+      // Отправляем собеседнику со временем
+      io.to(partnerSocket).emit("receive_message", messageData);
     }
 
-    // Подтверждаем отправителю, что всё ок
-    if (typeof callback === "function") callback({ status: "ok" });
+    // Подтверждаем отправителю, что всё ок, и отдаем ему серверное время
+    if (typeof callback === "function") callback({ status: "ok", timestamp });
   });
 
   // SEARCH
