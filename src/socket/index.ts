@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import { registerHandlers } from "./handlers";
+import { startMatchmakingLoop } from "../services/matchmaker.service";
 
 export function initSocket(server: any) {
   const frontendUrl = process.env.NODE_ENV === 'development' ? process.env.FRONTEND_URL_DEV  : process.env.FRONTEND_URL;
@@ -17,6 +18,8 @@ export function initSocket(server: any) {
   });
 
   console.log(`🚀 Socket.io настроен для работы с: ${frontendUrl}`);
+
+  startMatchmakingLoop(io);
 
   io.on("connection", (socket) => {
     console.log("New connection:", socket.id);

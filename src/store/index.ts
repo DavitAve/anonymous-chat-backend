@@ -1,8 +1,31 @@
-import { Message, User } from "../types";
+import { Message } from "../types";
+import { QueueUser } from "../types/search";
 
-export let queue: User[] = [];
+// 1. Очередь использует тип QueueUser (с чертами характера)
+export let queue: QueueUser[] = [];
 
-export function setQueue(newQueue: User[]) {
+// функция добавления (с защитой от дублей)
+export const addUserToQueue = (user: QueueUser) => {
+  const isAlreadyInQueue = queue.some((u) => u.socketId === user.socketId);
+  if (!isAlreadyInQueue) {
+    queue.push(user);
+    console.log(
+      `[Queue] Юзер ${user.socketId} добавлен в поиск. Всего в очереди: ${queue.length}`,
+    );
+  }
+};
+
+// функция удаления
+export const removeUserFromQueue = (socketId: string) => {
+  queue = queue.filter((u) => u.socketId !== socketId);
+};
+
+// Функция получения очереди
+export const getQueue = (): QueueUser[] => {
+  return queue;
+};
+
+export function setQueue(newQueue: QueueUser[]) {
   queue = newQueue;
 }
 

@@ -1,19 +1,8 @@
 import { Server, Socket } from "socket.io";
-import {
-  users,
-  activeChats,
-  queue,
-  chatHistory,
-  disconnectTimers,
-} from "../store";
-import { isMatch, removeFromQueue } from "../services/match.service";
-import {
-  generateChatId,
-  addMessage,
-  getHistory,
-  clearChat,
-} from "../services/chat.service";
-import { User } from "../types";
+import { users, activeChats, queue, disconnectTimers } from "../store";
+import { removeFromQueue } from "../services/match.service";
+import { addMessage, getHistory, clearChat } from "../services/chat.service";
+import { QueueUser } from "../types/search";
 
 export function registerHandlers(io: Server, socket: Socket) {
   const userId: string = socket.handshake.auth.userId;
@@ -36,87 +25,79 @@ export function registerHandlers(io: Server, socket: Socket) {
       return;
     }
 
-    // Генерируем время
     const timestamp = Date.now();
     const messageData = { text, senderId: userId, timestamp };
 
-    // Сохраняем в историю объект со временем
     addMessage(chatData.chatId, messageData);
 
     const partnerSocket = users.get(chatData.partnerId);
     if (partnerSocket) {
-      // Отправляем собеседнику со временем
       io.to(partnerSocket).emit("receive_message", messageData);
     }
 
-    // Подтверждаем отправителю, что всё ок, и отдаем ему серверное время
     if (typeof callback === "function") callback({ status: "ok", timestamp });
   });
 
   // SEARCH
   socket.on("start_search", (data) => {
-    const user: User = {
-      userId,
+    // ЗАЩИТА ОТ БАГОВ: Если юзер начал новый поиск, но застрял в старом чате (из-за релоада)
+    const existingChat = activeChats.get(userId);
+    if (existingChat) {
+      const partnerSocket = users.get(existingChat.partnerId);
+      if (partnerSocket) io.to(partnerSocket).emit("partner_left");
+      clearChat(existingChat.chatId);
+      activeChats.delete(existingChat.partnerId);
+      activeChats.delete(userId);
+    }
+
+    const user: QueueUser = {
+      socketId: socket.id,
+      userId: userId,
       age: data.age,
       gender: data.gender,
       partnerAges: Array.isArray(data.partnerAges)
         ? data.partnerAges
         : [data.partnerAges],
       partnerGender: data.partnerGender,
+
+      isPremium: data.isPremium || false,
+      traits: data.traits || {
+        energy: 5,
+        talkativeness: 5,
+        logic: 5,
+        interests: [],
+      },
+      joinedAt: Date.now(),
     };
 
     removeFromQueue(userId);
-
-    const matchIndex = queue.findIndex((u) => isMatch(u, user));
-
-    if (matchIndex !== -1) {
-      const matchedUser = queue.splice(matchIndex, 1)[0];
-
-      const chatId = generateChatId();
-
-      activeChats.set(userId, {
-        partnerId: matchedUser.userId,
-        chatId,
-      });
-
-      activeChats.set(matchedUser.userId, {
-        partnerId: userId,
-        chatId,
-      });
-
-      chatHistory.set(chatId, []);
-
-      const partnerSocket = users.get(matchedUser.userId);
-
-      io.to(socket.id).emit("match_found");
-      if (partnerSocket) {
-        io.to(partnerSocket).emit("match_found");
-      }
-    } else {
-      queue.push(user);
-    }
+    queue.push(user);
   });
 
   // LEAVE
-  socket.on("leave_chat", () => {
+  socket.on("leave_chat", (callback) => {
     const chatData = activeChats.get(userId);
-    if (!chatData) return;
 
-    const partnerSocket = users.get(chatData.partnerId);
+    if (chatData) {
+      const partnerSocket = users.get(chatData.partnerId);
 
-    if (partnerSocket) {
-      io.to(partnerSocket).emit("partner_left");
+      if (partnerSocket) {
+        io.to(partnerSocket).emit("partner_left");
+      }
+
+      clearChat(chatData.chatId);
+      activeChats.delete(chatData.partnerId);
+      activeChats.delete(userId);
     }
 
-    clearChat(chatData.chatId);
-
-    activeChats.delete(chatData.partnerId);
-    activeChats.delete(userId);
+    // Сообщаем фронтенду, что всё очищено и можно безопасно уходить
+    if (typeof callback === "function") {
+      callback();
+    }
   });
 
   // DISCONNECT
   socket.on("disconnect", () => {
-    // 1. СРАЗУ удаляем из очереди поиска, если он там был
     removeFromQueue(userId);
 
     const timer = setTimeout(() => {
@@ -165,10 +146,8 @@ export function registerHandlers(io: Server, socket: Socket) {
     const chatData = activeChats.get(userId);
 
     if (!chatData) {
-      // Чата нет, выкидываем на главную
       socket.emit("no_active_chat");
     } else {
-      // Чат есть, ФРОНТЕНД ГОТОВ её принять отправляем
       const history = getHistory(chatData.chatId);
       socket.emit("chat_history", history);
     }
