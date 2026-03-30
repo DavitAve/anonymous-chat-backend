@@ -3,7 +3,7 @@ import { registerHandlers } from "./handlers";
 import { startMatchmakingLoop } from "../services/matchmaker.service";
 
 export function initSocket(server: any) {
-  const frontendUrl = process.env.NODE_ENV === 'development' ? process.env.FRONTEND_URL_DEV  : process.env.FRONTEND_URL;
+  const frontendUrl = process.env.FRONTEND_URL;
 
   const io = new Server(server, {
     cors: {
