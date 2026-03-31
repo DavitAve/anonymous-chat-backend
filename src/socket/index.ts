@@ -11,7 +11,7 @@ export function initSocket(server: any) {
       methods: ["GET", "POST"],
       credentials: true,
     },
-    transports: ["polling", "websocket"],
+    transports: ["websocket"],
     allowEIO3: true,
     pingTimeout: 60000,
     pingInterval: 25000,
