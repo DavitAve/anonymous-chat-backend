@@ -4,6 +4,8 @@ import cors from "cors";
 import { initSocket } from "./socket";
 import { connectDB } from "./config/db";
 import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
+import voteRoutes from "./routes/vote.routes";
 import "dotenv/config";
 
 const app = express();
@@ -16,7 +18,11 @@ app.get("/", (_, res) => {
   res.setHeader("Content-Type", "text/plain");
   res.status(200).send("OK");
 });
+
+// routes
 app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/votes", voteRoutes);
 
 const server = http.createServer(app);
 
