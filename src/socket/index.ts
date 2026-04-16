@@ -3,11 +3,24 @@ import { registerHandlers } from "./handlers";
 import { startMatchmakingLoop } from "../services/matchmaker.service";
 
 export function initSocket(server: any) {
-  const frontendUrl = process.env.FRONTEND_URL;
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.TELEGRAM_APP_URL,
+    process.env.FRONTEND_URL_SECOND,
+    process.env.MOBILE_URL,
+  ].filter(Boolean) as string[];
 
   const io = new Server(server, {
     cors: {
-      origin: frontendUrl,
+      // Динамическая проверка: разрешаем если адрес в списке или если это мобилка (нет origin)
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          // callback(null, true); // for all
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -17,7 +30,7 @@ export function initSocket(server: any) {
     pingInterval: 25000,
   });
 
-  console.log(`🚀 Socket.io настроен для работы с: ${frontendUrl}`);
+  console.log(`🚀 Socket.io настроен для работы`);
 
   startMatchmakingLoop(io);
 
