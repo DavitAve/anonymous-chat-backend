@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import { registerHandlers } from "./handlers";
 import { startMatchmakingLoop } from "../services/matchmaker.service";
+import { startOnlineCounter } from "../services/online.service";
 
 export function initSocket(server: any) {
   const allowedOrigins = [
@@ -24,11 +25,13 @@ export function initSocket(server: any) {
       methods: ["GET", "POST"],
       credentials: true,
     },
-    transports: ["websocket", 'polling'],
+    transports: ["websocket", "polling"],
     allowEIO3: true,
     pingTimeout: 60000,
     pingInterval: 25000,
   });
+
+  startOnlineCounter(io);
 
   console.log(`🚀 Socket.io настроен для работы`);
 

@@ -3,12 +3,13 @@ import { users, activeChats, queue, disconnectTimers } from "../store";
 import { removeFromQueue } from "../services/match.service";
 import { addMessage, getHistory, clearChat } from "../services/chat.service";
 import { QueueUser } from "../types/search";
+import { getCurrentOnlineCount } from "../services/online.service";
 
 export function registerHandlers(io: Server, socket: Socket) {
   const userId: string = socket.handshake.auth.userId;
 
   users.set(userId, socket.id);
-  io.emit("online_count", users.size);
+  // УДАЛЕНО: io.emit("online_count", users.size); Теперь спамит сервис
 
   if (disconnectTimers.has(userId)) {
     clearTimeout(disconnectTimers.get(userId)!);
@@ -102,7 +103,7 @@ export function registerHandlers(io: Server, socket: Socket) {
 
     const timer = setTimeout(() => {
       users.delete(userId);
-      io.emit("online_count", users.size);
+      // УДАЛЕНО: io.emit("online_count", users.size); Теперь спамит сервис
 
       const chatData = activeChats.get(userId);
       if (!chatData) return;
@@ -153,8 +154,9 @@ export function registerHandlers(io: Server, socket: Socket) {
     }
   });
 
+  // Когда юзер только зашел, отдаем ему красивую цифру сразу, не заставляя ждать 2.5 сек
   socket.on("request_online_count", () => {
-    socket.emit("online_count", users.size);
+    socket.emit("online_count", getCurrentOnlineCount());
   });
 
   // CANCEL SEARCH
